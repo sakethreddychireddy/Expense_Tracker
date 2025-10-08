@@ -25,6 +25,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     sqlOptions => sqlOptions.EnableRetryOnFailure()));
 
 builder.Services.AddScoped<IExpenseService, ExpenseService>();
+builder.Services.AddScoped<IRecurringExpenseService, RecurringExpenseService>();
 
 // Register JwtService
 builder.Services.AddSingleton<IJwtService, JwtService>();

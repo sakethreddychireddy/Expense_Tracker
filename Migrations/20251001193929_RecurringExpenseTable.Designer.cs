@@ -4,6 +4,7 @@ using Expense_Tracker.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Expense_Tracker.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251001193929_RecurringExpenseTable")]
+    partial class RecurringExpenseTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -146,7 +149,7 @@ namespace Expense_Tracker.Migrations
             modelBuilder.Entity("Expense_Tracker.Models.RecurringExpense", b =>
                 {
                     b.HasOne("Expense_Tracker.Models.User", "User")
-                        .WithMany("RecurringExpenses")
+                        .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -157,8 +160,6 @@ namespace Expense_Tracker.Migrations
             modelBuilder.Entity("Expense_Tracker.Models.User", b =>
                 {
                     b.Navigation("Expenses");
-
-                    b.Navigation("RecurringExpenses");
                 });
 #pragma warning restore 612, 618
         }

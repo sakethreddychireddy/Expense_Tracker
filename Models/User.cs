@@ -18,5 +18,6 @@ namespace Expense_Tracker.Models
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public ICollection<Expense> Expenses { get; set; } = new List<Expense>();
+        public ICollection<RecurringExpense> RecurringExpenses { get; set; } = new List<RecurringExpense>();
     }
 }

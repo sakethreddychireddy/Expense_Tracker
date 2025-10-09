@@ -1,4 +1,4 @@
-using Expense_Tracker.Auth;
+﻿using Expense_Tracker.Auth;
 using Expense_Tracker.Data;
 using Expense_Tracker.Middleware;
 using Expense_Tracker.Service;
@@ -68,11 +68,19 @@ builder.Services.AddAuthentication(options =>
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+//if (app.Environment.IsDevelopment())
+//{
+//    app.UseSwagger();
+//    app.UseSwaggerUI();
+//}
+
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Expense Tracker API v1");
+    c.RoutePrefix = string.Empty; // makes Swagger available at root: https://localhost:7196/
+});
+
 
 app.UseCors("AllowAllOrigins");
 app.UseMiddleware<GlobalExceptionMiddleware>();

@@ -1,0 +1,18 @@
+﻿version: '3.8'
+
+services:
+  sql-server:
+    image: mcr.microsoft.com/mssql/server:2019-latest # Or a specific version like 2017-latest
+    container_name: sql-server-container
+    environment:
+      SA_PASSWORD: "Saketh@9491" # Replace with a strong password
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: "Developer" # Or "Express", "Standard", "Enterprise"
+    ports:
+      - "1433:1433" # Map host port 1433 to container port 1433
+    volumes:
+      - sqlserver_data:/var/opt/mssql # Persist data to a named volume
+    restart: unless-stopped
+
+volumes:
+  sqlserver_data:

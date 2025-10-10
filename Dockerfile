@@ -13,17 +13,14 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
-# Ensure network DNS works (helps in some Docker setups)
-RUN echo "nameserver 8.8.8.8" > /etc/resolv.conf
-
-# Ensure SSL certificates are up to date
+# Ensure SSL certificates are up to date and apt works even if DNS temporarily fails
 RUN apt-get update || true && apt-get install -y --no-install-recommends ca-certificates && update-ca-certificates
 
 # Copy project file and restore dependencies
 COPY ["Expense_Tracker.csproj", "."]
 RUN dotnet restore "./Expense_Tracker.csproj" --disable-parallel --ignore-failed-sources
 
-# Copy the rest of the source code and build
+# Copy the rest of the project and build
 COPY . .
 RUN dotnet build "./Expense_Tracker.csproj" -c $BUILD_CONFIGURATION -o /app/build
 

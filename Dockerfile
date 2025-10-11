@@ -4,20 +4,23 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Copy the csproj and restore dependencies separately for layer caching
+# Copy the project file and restore dependencies
 COPY ["Expense_Tracker.csproj", "./"]
 
-# Ensure NuGet source is set properly (removes duplicate errors)
+# Copy NuGet configuration (ensures stable restore)
+COPY NuGet.config ./
+
+# Ensure NuGet source is configured
 RUN dotnet nuget remove source nuget.org || true \
     && dotnet nuget add source https://api.nuget.org/v3/index.json -n nuget.org
 
-# Restore dependencies (disable parallel to avoid network hiccups in Docker)
+# Restore dependencies (retry-friendly)
 RUN dotnet restore "./Expense_Tracker.csproj" --disable-parallel
 
 # Copy the rest of the source code
 COPY . .
 
-# Build the application
+# Build the project
 RUN dotnet build "./Expense_Tracker.csproj" -c Release -o /app/build
 
 # ===========================
@@ -32,17 +35,22 @@ RUN dotnet publish "./Expense_Tracker.csproj" -c Release -o /app/publish /p:UseA
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
 
-# Copy published output from build stage
+# --- DNS Fix for Linux Docker (prevents NU1301 issues) ---
+# Adds Google DNS servers to Docker container runtime environment
+RUN echo "nameserver 8.8.8.8" >> /etc/resolv.conf || true
+RUN echo "nameserver 8.8.4.4" >> /etc/resolv.conf || true
+
+# Copy published output from previous step
 COPY --from=publish /app/publish .
 
 # Expose ports (must match docker-compose.yml)
 EXPOSE 8080
 EXPOSE 8081
 
-# Set environment variables (match docker-compose)
+# Set environment variables
 ENV ASPNETCORE_URLS=http://+:8080
 ENV ASPNETCORE_ENVIRONMENT=Development
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 
-# Entry point for the API
+# Start the app
 ENTRYPOINT ["dotnet", "Expense_Tracker.dll"]

@@ -13,11 +13,11 @@ var builder = WebApplication.CreateBuilder(args);
 // bind Jwt settings
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>()
-                  ?? throw new InvalidOperationException("JWT settings not found in configuration");
+                  ?? throw new InvalidOperationException("JWT settings not found in configuration");  
 
 // Add services to the container.
 builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddEndpointsApiExplorer(); 
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<AppDbContext>(options =>

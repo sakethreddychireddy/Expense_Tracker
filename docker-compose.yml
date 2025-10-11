@@ -1,18 +1,41 @@
-﻿version: '3.8'
+﻿version: "3.9"
 
 services:
-  sql-server:
-    image: mcr.microsoft.com/mssql/server:2019-latest # Or a specific version like 2017-latest
-    container_name: sql-server-container
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: expense_tracker_db
     environment:
-      SA_PASSWORD: "Saketh@9491" # Replace with a strong password
+      SA_PASSWORD: "Saketh@9491"
       ACCEPT_EULA: "Y"
-      MSSQL_PID: "Developer" # Or "Express", "Standard", "Enterprise"
     ports:
-      - "1433:1433" # Map host port 1433 to container port 1433
+      - "1433:1433"
+    networks:
+      - expense_network
     volumes:
-      - sqlserver_data:/var/opt/mssql # Persist data to a named volume
+      - sql_data:/var/opt/mssql
     restart: unless-stopped
 
+  expense-tracker-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: expense_tracker_api
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=ExpenseTracker;User Id=sa;Password=Saketh@9491;
+      - ASPNETCORE_ENVIRONMENT=Development
+      - DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    depends_on:
+      - sqlserver
+    networks:
+      - expense_network
+    restart: unless-stopped
+
+networks:
+  expense_network:
+    driver: bridge
+
 volumes:
-  sqlserver_data:
+  sql_data:

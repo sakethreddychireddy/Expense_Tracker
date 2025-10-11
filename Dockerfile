@@ -4,25 +4,24 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Copy everything first (this helps dotnet restore work properly)
+# Copy the csproj and restore dependencies separately for layer caching
 COPY ["Expense_Tracker.csproj", "./"]
 
-# Add NuGet source explicitly (in case it's missing)
-RUN dotnet nuget remove source nuget.org || true
-RUN dotnet nuget add source https://api.nuget.org/v3/index.json -n nuget.org
+# Ensure NuGet source is set properly (removes duplicate errors)
+RUN dotnet nuget remove source nuget.org || true \
+    && dotnet nuget add source https://api.nuget.org/v3/index.json -n nuget.org
 
-# Copy custom NuGet.config if present (optional)
-# COPY NuGet.config ./
+# Restore dependencies (disable parallel to avoid network hiccups in Docker)
+RUN dotnet restore "./Expense_Tracker.csproj" --disable-parallel
 
-# Restore dependencies (disable parallel to reduce transient network errors)
-RUN dotnet restore "./Expense_Tracker.csproj" --disable-parallel --ignore-failed-sources
-
-# Copy the rest of the project and build
+# Copy the rest of the source code
 COPY . .
+
+# Build the application
 RUN dotnet build "./Expense_Tracker.csproj" -c Release -o /app/build
 
 # ===========================
-# STEP 2: Publish
+# STEP 2: Publish the app
 # ===========================
 FROM build AS publish
 RUN dotnet publish "./Expense_Tracker.csproj" -c Release -o /app/publish /p:UseAppHost=false
@@ -32,15 +31,18 @@ RUN dotnet publish "./Expense_Tracker.csproj" -c Release -o /app/publish /p:UseA
 # ===========================
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
+
+# Copy published output from build stage
 COPY --from=publish /app/publish .
 
-# Expose the default port
+# Expose ports (must match docker-compose.yml)
 EXPOSE 8080
 EXPOSE 8081
 
-# Set environment variables
+# Set environment variables (match docker-compose)
 ENV ASPNETCORE_URLS=http://+:8080
+ENV ASPNETCORE_ENVIRONMENT=Development
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 
-# Start the app
+# Entry point for the API
 ENTRYPOINT ["dotnet", "Expense_Tracker.dll"]

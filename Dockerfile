@@ -5,17 +5,28 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Install CA certificates for HTTPS
+# Optional: provide a corporate CA certificate at build time:
+# docker build --build-arg COMPANY_CA=company.crt ...
+ARG COMPANY_CA
+# Install CA certificates and curl for diagnostics
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends ca-certificates && \
+    apt-get install -y --no-install-recommends ca-certificates curl && \
     rm -rf /var/lib/apt/lists/*
+
+# If a company CA file was supplied, copy and install it
+# (place company.crt next to Dockerfile and pass --build-arg COMPANY_CA=company.crt)
+COPY ${COMPANY_CA:-} /usr/local/share/ca-certificates/company.crt
+RUN if [ -f /usr/local/share/ca-certificates/company.crt ]; then update-ca-certificates; fi
 
 # Copy project file and NuGet.config first (for caching)
 COPY ["Expense_Tracker.csproj", "./"]
 COPY ["NuGet.config", "./"]
 
-# Verify NuGet source
+# Show configured NuGet sources (diagnostic)
 RUN dotnet nuget list source
+
+# Optional diagnostic: attempt to fetch NuGet index (will not fail build if it can't)
+RUN curl -fsS https://api.nuget.org/v3/index.json -o /tmp/nuget_index.json || true
 
 # Restore dependencies
 RUN dotnet restore "./Expense_Tracker.csproj" --disable-parallel --no-cache
@@ -23,10 +34,8 @@ RUN dotnet restore "./Expense_Tracker.csproj" --disable-parallel --no-cache
 # Copy the rest of the source code
 COPY . .
 
-# Build the application
+# Build and publish
 RUN dotnet build "./Expense_Tracker.csproj" -c Release -o /app/build
-
-# Publish the application
 RUN dotnet publish "./Expense_Tracker.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 # ===========================

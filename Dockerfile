@@ -4,7 +4,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# --- DNS Fix (applies to build stage) ---
+# --- DNS Fix (only for build stage) ---
 RUN echo "nameserver 8.8.8.8" > /etc/resolv.conf && \
     echo "nameserver 8.8.4.4" >> /etc/resolv.conf
 
@@ -38,10 +38,6 @@ RUN dotnet publish "./Expense_Tracker.csproj" -c Release -o /app/publish /p:UseA
 # ===========================
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
-
-# --- Optional DNS Fix (for runtime too) ---
-RUN echo "nameserver 8.8.8.8" > /etc/resolv.conf && \
-    echo "nameserver 8.8.4.4" >> /etc/resolv.conf
 
 # Copy published output from previous step
 COPY --from=publish /app/publish .

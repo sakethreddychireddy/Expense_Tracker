@@ -6,8 +6,8 @@ WORKDIR /src
 
 # --- DNS FIX ---
 # Fix name resolution issues that can block NuGet restore inside Docker
-RUN echo "nameserver 8.8.8.8" > /etc/resolv.conf && \
-    echo "nameserver 1.1.1.1" >> /etc/resolv.conf
+# RUN echo "nameserver 8.8.8.8" > /etc/resolv.conf && \
+ #   echo "nameserver 1.1.1.1" >> /etc/resolv.conf
 
 # Copy project files and NuGet config first (for better layer caching)
 COPY ["Expense_Tracker.csproj", "./"]

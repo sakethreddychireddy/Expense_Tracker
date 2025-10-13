@@ -8,7 +8,7 @@ WORKDIR /src
 COPY ["Expense_Tracker.csproj", "./"]
 
 # Copy NuGet configuration (ensures stable restore)
-# COPY NuGet.config ./
+COPY NuGet.config ./
 
 # Ensure NuGet source is configured
 RUN dotnet nuget remove source nuget.org || true \

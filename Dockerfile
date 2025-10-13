@@ -29,8 +29,11 @@ RUN if [ -f /usr/local/share/ca-certificates/company.crt ]; then update-ca-certi
 
 # Copy csproj and NuGet.config first (cache layer)
 COPY ["Expense_Tracker.csproj", "./"]
-# Copy NuGet.config only if present to avoid failing the copy step when absent
-COPY ["NuGet.config", "./"] 2>/dev/null || true
+
+# NOTE: Docker COPY does not accept shell redirections or "|| true".
+# Copy NuGet.config normally; ensure NuGet.config exists in the build context.
+# If you don't have a NuGet.config, either create an empty one or remove this line.
+COPY ["NuGet.config", "./"]
 
 # Show configured NuGet sources and diagnostics
 RUN dotnet nuget list source --verbosity normal || true
@@ -63,3 +66,4 @@ USER app
 
 EXPOSE 80
 ENTRYPOINT ["dotnet", "Expense_Tracker.dll"]
+    

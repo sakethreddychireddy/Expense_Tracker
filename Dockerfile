@@ -13,6 +13,9 @@ WORKDIR /src
 COPY ["Expense_Tracker.csproj", "./"]
 COPY NuGet.config ./
 
+# Verify NuGet source is valid
+RUN dotnet nuget list source
+
 # Ensure NuGet source is configured
 RUN dotnet nuget remove source nuget.org || true \
     && dotnet nuget add source https://api.nuget.org/v3/index.json -n nuget.org

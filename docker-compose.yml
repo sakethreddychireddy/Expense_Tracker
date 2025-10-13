@@ -1,6 +1,4 @@
-﻿version: "3.9"
-
-services:
+﻿services:
   expense_tracker_api:
     build:
       context: .

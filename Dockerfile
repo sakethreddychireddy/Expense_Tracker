@@ -4,24 +4,15 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# --- DNS FIX ---
-# Fix name resolution issues that can block NuGet restore inside Docker
-# RUN echo "nameserver 8.8.8.8" > /etc/resolv.conf && \
- #   echo "nameserver 1.1.1.1" >> /etc/resolv.conf
-
-# Copy project files and NuGet config first (for better layer caching)
+# Copy project file and NuGet.config first (for caching)
 COPY ["Expense_Tracker.csproj", "./"]
-COPY NuGet.config ./
+COPY ["NuGet.config", "./"]
 
-# Verify NuGet source is valid
+# Verify NuGet source
 RUN dotnet nuget list source
 
-# Ensure NuGet source is configured
-RUN dotnet nuget remove source nuget.org || true \
-    && dotnet nuget add source https://api.nuget.org/v3/index.json -n nuget.org
-
-# Restore dependencies
-RUN dotnet restore "./Expense_Tracker.csproj" --disable-parallel
+# Restore dependencies (disable parallel for stability)
+RUN dotnet restore "./Expense_Tracker.csproj" --disable-parallel --no-cache
 
 # Copy the rest of the source code
 COPY . .
@@ -34,20 +25,16 @@ RUN dotnet publish "./Expense_Tracker.csproj" -c Release -o /app/publish /p:UseA
 
 
 # ===========================
-# STEP 2: Create runtime image
+# STEP 2: Runtime image
 # ===========================
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
 
-# --- DNS FIX (again for runtime) ---
-#RUN echo "nameserver 8.8.8.8" > /etc/resolv.conf && \
- #   echo "nameserver 1.1.1.1" >> /etc/resolv.conf
-
-# Copy published files from build stage
+# Copy published files
 COPY --from=build /app/publish .
 
-# Expose the default HTTP port
+# Expose HTTP port
 EXPOSE 8080
 
-# Start the application
+# Run the application
 ENTRYPOINT ["dotnet", "Expense_Tracker.dll"]

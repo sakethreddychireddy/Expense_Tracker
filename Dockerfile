@@ -1,3 +1,4 @@
+# Multi-stage Dockerfile for Expense_Tracker (.NET 8)
 # ===========================
 # STEP 1: Build the application
 # ===========================
@@ -31,14 +32,23 @@ RUN dotnet publish "./Expense_Tracker.csproj" -c Release -o /app/publish /p:UseA
 # ===========================
 # STEP 2: Runtime image
 # ===========================
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 
-# Copy published files from build stage
+# Recommended runtime environment settings
+ENV DOTNET_RUNNING_IN_CONTAINER=true \
+    DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false \
+    ASPNETCORE_URLS=http://+:80
+
+# Copy published app
 COPY --from=build /app/publish .
 
-# Expose HTTP port
-EXPOSE 8080
+# Create non-root user and set ownership (optional but recommended)
+RUN addgroup --system app && adduser --system --ingroup app app \
+    && chown -R app:app /app
+USER app
+
+EXPOSE 80
 
 # Run the application
 ENTRYPOINT ["dotnet", "Expense_Tracker.dll"]

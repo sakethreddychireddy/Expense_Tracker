@@ -2,65 +2,83 @@
     agent any
 
     environment {
-        DOCKER_IMAGE = 'expense_tracker/backend-api'
-        BRANCH_NAME = 'main'
+        DOCKER_IMAGE = 'aspnet-backend:latest' // Docker image name
+        REGISTRY = '' // Set Docker Hub username if pushing
+        APP_PORT = '5000' // Port to expose on host
     }
 
     stages {
         stage('Checkout') {
             steps {
-                echo '📥 Cloning backend repository...'
-                git branch: "${BRANCH_NAME}",
-                    url: 'https://github.com/sakethreddychireddy/Expense_Tracker.git'
+                echo 'Checking out code...'
+                checkout scm
             }
         }
 
-        stage('Restore & Build') {
+        stage('Restore Dependencies') {
             steps {
-                echo '🧱 Building ASP.NET Core project...'
+                echo 'Restoring .NET dependencies...'
                 sh 'dotnet restore'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                echo 'Building application...'
                 sh 'dotnet build --configuration Release'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                echo 'Running unit tests...'
+                sh 'dotnet test --no-build --configuration Release'
             }
         }
 
         stage('Publish') {
             steps {
-                echo '📦 Publishing for Docker...'
-                sh 'dotnet publish -c Release -o out'
+                echo 'Publishing application...'
+                sh 'dotnet publish -c Release -o ./publish'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                echo '🐳 Building Docker image...'
-                script {
-                    sh "docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} ."
-                    sh "docker tag ${DOCKER_IMAGE}:${BUILD_NUMBER} ${DOCKER_IMAGE}:latest"
-                }
+                echo 'Building Docker image...'
+                sh "docker build -t ${DOCKER_IMAGE} ."
             }
         }
 
-        stage('Deploy Container') {
+        stage('Push Docker Image') {
+            when {
+                expression { return env.REGISTRY != '' }
+            }
             steps {
-                echo '🚀 Deploying container...'
-                script {
-                    sh '''
-                        docker ps -q --filter "name=expense_api_container" | grep -q . && \
-                        docker stop expense_api_container && docker rm expense_api_container || true
+                echo 'Pushing Docker image to registry...'
+                sh "docker tag ${DOCKER_IMAGE} ${REGISTRY}/${DOCKER_IMAGE}"
+                sh "docker push ${REGISTRY}/${DOCKER_IMAGE}"
+            }
+        }
 
-                        docker run -d -p 8081:8081 --name expense_api_container ${DOCKER_IMAGE}:latest
-                    '''
-                }
+        stage('Deploy') {
+            steps {
+                echo 'Deploying application...'
+                sh """
+                docker stop aspnet_backend || true
+                docker rm aspnet_backend || true
+                docker run -d -p ${APP_PORT}:80 --name aspnet_backend ${DOCKER_IMAGE}
+                """
             }
         }
     }
 
     post {
         success {
-            echo "✅ Backend API deployed successfully at http://server:8081"
+            echo 'Deployment completed successfully!'
         }
         failure {
-            echo "❌ Backend build or deployment failed. Check Jenkins logs."
+            echo 'Deployment failed.'
         }
     }
 }

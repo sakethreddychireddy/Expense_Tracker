@@ -3,7 +3,7 @@
 services:
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: expense_sql
+    container_name: expense_tracker_db
     environment:
       SA_PASSWORD: "Saketh@9491"
       ACCEPT_EULA: "Y"
@@ -16,15 +16,17 @@ services:
     restart: unless-stopped
 
   webapi:
-    build: .
-    container_name: expense_webapi
+    build:
+      context: .
+      dockerfile: Expense_Tracker/Dockerfile
+    container_name: expense_tracker_api
+    ports:
+      - "8080:8080"
     depends_on:
       - sqlserver
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=ExpenseDB;User Id=sa;Password=Saketh@9491;
-    ports:
-      - "5000:80"
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=ExpenseDB;User Id=sa;Password=Saketh@9491;TrustServerCertificate=True;
     networks:
       - expense_network
     restart: unless-stopped

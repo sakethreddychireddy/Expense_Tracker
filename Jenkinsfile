@@ -9,7 +9,7 @@
     environment {
         APP_NAME = 'expense-tracker-api'
         DOCKER_REGISTRY = 'docker.io/sakethreddychireddy'   // Replace with your Docker Hub username
-        DOCKER_CREDENTIALS = 'docker-hub-cred'             // Jenkins credential ID for Docker Hub
+        DOCKER_CREDENTIALS = 'docker-hub-cred'              // Jenkins credential ID for Docker Hub
     }
 
     stages {

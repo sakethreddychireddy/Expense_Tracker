@@ -1,22 +1,21 @@
-# Stage 1: Build the application
+# ---- Build Stage ----
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+
+# Copy csproj and restore
+COPY *.sln ./
+COPY **/*.csproj ./
+RUN for file in $(find . -maxdepth 2 -name '*.csproj'); do dotnet restore "$file"; done
+
+# Copy everything and build
+COPY . .
+RUN dotnet publish -c Release -o /app/publish
+
+# ---- Runtime Stage ----
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 
-# Copy csproj and restore dependencies
-COPY *.csproj ./
-RUN dotnet restore
-
-# Copy all files and publish
-COPY . ./
-RUN dotnet publish -c Release -o out
-
-# Stage 2: Runtime image
-FROM mcr.microsoft.com/dotnet/aspnet:8.0
-WORKDIR /app
-COPY --from=build /app/out .
-
-# Expose port
+COPY --from=build /app/publish .
 EXPOSE 80
 
-# Entry point
 ENTRYPOINT ["dotnet", "Expense_Tracker.dll"]

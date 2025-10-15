@@ -19,7 +19,7 @@
 			}
 			stage('Build .NET Project') {
 				steps {
-					// Build the application
+					// Build the application using Docker Compose
 					echo 'Building the application...'
 					sh 'dotnet build Expense_Tracker/Expense_Tracker.csproj -c Release'
 					}

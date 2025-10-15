@@ -1,75 +1,71 @@
 ﻿pipeline {
-    agent any
-
-    environment {
-        APP_NAME = 'expense_tracker_api'
-        DOCKER_COMPOSE_FILE = 'docker-compose.yml'
-        BUILD_DIR = 'publish'
-        ARCHIVE_DIR = '/var/jenkins_home/build_archives'
-        BRANCH_NAME = 'main'
-    }
-
-    stages {
-        stage('Checkout') {
-            steps {
-                echo 'Cloning repository...'
-                git branch: "${BRANCH_NAME}",
-                    url: 'https://github.com/sakethreddychireddy/Expense_Tracker.git'
-            }
-        }
-
-        stage('Build .NET Project') {
-            steps {
-                echo 'Building ASP.NET 8 project...'
-                sh 'dotnet build Expense_Tracker/Expense_Tracker.csproj -c Release'
-            }
-        }
-
-        stage('Publish .NET Project') {
-            steps {
-                echo 'Publishing ASP.NET 8 project...'
-                sh 'dotnet publish Expense_Tracker/Expense_Tracker.csproj -c Release -o publish'
-            }
-        }
-
-        stage('Archive Old Build') {
-            steps {
-                echo 'Archiving previous build...'
-                sh '''
-                    mkdir -p ${ARCHIVE_DIR}
-                    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-                    if [ -d "${BUILD_DIR}" ]; then
-                        tar -czf ${ARCHIVE_DIR}/${APP_NAME}_$TIMESTAMP.tar.gz ${BUILD_DIR} || true
-                        echo "Old build archived as ${ARCHIVE_DIR}/${APP_NAME}_$TIMESTAMP.tar.gz"
-                    else
-                        echo "No previous build found to archive."
-                    fi
-                '''
-            }
-        }
-
-        stage('Build Docker Image') {
-            steps {
-                echo 'Building Docker image...'
-                sh "docker compose -f ${DOCKER_COMPOSE_FILE} build"
-            }
-        }
-
-        stage('Deploy Containers') {
-            steps {
-                echo 'Deploying containers...'
-                sh "docker compose -f ${DOCKER_COMPOSE_FILE} down"
-                sh "docker compose -f ${DOCKER_COMPOSE_FILE} up -d"
-            }
-        }
-    }
-
-    post {
-        success {
-            echo 'Deployment completed successfully.'
-        }
-        failure {
-            echo 'Deployment failed.'
-        }
-    }
+	agent any
+	environment {
+		// Define environment variables
+		APP_NAME = 'expense-tracker-api'
+		DOCKER_COMPOSE_FILE = 'docker-compose.yml'
+		BUILD_DIR = 'publish'
+		ARCHIVE_DIR = '/var/jenkins_home/build_archives'
+		BRANCH_NAME = 'main'
+		}
+		stages {
+			stage('Checkout') {
+				steps {
+					// Checkout the code from the repository
+					echo 'Checking out code...'
+					git branch: "${BRANCH_NAME}",
+					url: 'https://github.com/sakethreddychireddy/Expense_Tracker.git'
+					}
+			}
+			stage('Build .NET Project') {
+				steps {
+					// Build the application using Docker Compose
+					echo 'Building the application...'
+					sh 'dotnet build Expense_Tracker/Expense_Tracker.csproj -c Release'
+					}
+			}
+			stage('Publish .NET Project') {
+				steps {
+					// Publish the application to a specified directory
+					echo 'Publishing the application...'
+					sh 'dotnet publish Expense_Tracker/Expense_Tracker.csproj -c Release -o publish'
+					}
+			}
+			stage('Archive Old Build') {
+				steps {
+					// Archive the old build if it exists
+					echo 'Archiving old build if it exists...'
+					sh '''
+					mkdir -p ${ARCHIVE_DIR}
+					TIMESTAMP=$(date +%Y%m%d%H%M%S)
+					if [ -d "${BUILD_DIR}" ]; then
+						mv ${BUILD_DIR} ${ARCHIVE_DIR}/${APP_NAME}_$TIMESTAMP
+					fi
+					'''
+				}
+			}
+			stage('Build Docker Image') {
+				steps {
+					// Build the Docker image using Docker Compose
+					echo 'Building Docker image...'
+					sh 'docker-compose -f ${DOCKER_COMPOSE_FILE} build'
+					}
+			}
+			stage('Docker Containers Up') {
+				steps {
+					// Start the Docker containers using Docker Compose
+					echo 'Starting Docker containers...'
+					sh 'docker-compose -f ${DOCKER_COMPOSE_FILE} down'
+					sh 'docker-compose -f ${DOCKER_COMPOSE_FILE} up -d'
+					}
+			}
+		}
+		post {
+			success {
+				echo 'Pipeline completed successfully!'
+			}
+			failure {
+				echo 'Pipeline failed. Please check the logs.'
+			}
+		}
 }

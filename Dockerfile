@@ -1,18 +1,17 @@
-# Use the official .NET SDK 8.0 image for building
+﻿# Use .NET 8 SDK image to build the app
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-WORKDIR /app
+WORKDIR /src
 
 # Copy everything and restore dependencies
-COPY . ./
-RUN dotnet restore
+COPY . .
+RUN dotnet restore Expense_Tracker.csproj
 
-# Publish the app
-RUN dotnet publish -c Release -o out
+# Build and publish the application
+RUN dotnet publish Expense_Tracker.csproj -c Release -o /app/publish
 
-# Build runtime image
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+# Final runtime image
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
-COPY --from=build /app/out .
+COPY --from=build /app/publish .
 EXPOSE 8080
-
 ENTRYPOINT ["dotnet", "Expense_Tracker.dll"]

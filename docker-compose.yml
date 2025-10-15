@@ -3,15 +3,17 @@
 services:
   api:
     build:
-      context: .
+      context: ./Expense_Tracker
       dockerfile: Dockerfile
+    container_name: expense_tracker_api
     ports:
       - "8080:8080"
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Server=db;Database=ExpenseDB;User Id=sa;Password=Saketh@9491;
     depends_on:
       - db
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=db;Database=ExpenseTrackerDB;User Id=sa;Password=Saketh@9491;TrustServerCertificate=True;
+    networks:
+      - expense_net
 
   db:
     image: mcr.microsoft.com/mssql/server:2022-latest
@@ -23,7 +25,11 @@ services:
       - "1433:1433"
     volumes:
       - sql_data:/var/opt/mssql
-    restart: unless-stopped
+    networks:
+      - expense_net
+
+networks:
+  expense_net:
 
 volumes:
   sql_data:

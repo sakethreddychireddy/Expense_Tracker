@@ -2,9 +2,10 @@
     agent any
 
     environment {
-        APP_NAME = 'expense_tracker-backend'
-        DOCKER_IMAGE = 'expense_tracker-backend'
-        DOCKER_CONTAINER = 'expense_tracker_api'
+        APP_NAME = 'expense_tracker_api'
+        DOCKER_COMPOSE_FILE = 'docker-compose.yml'
+        BUILD_DIR = 'publish'
+        ARCHIVE_DIR = '/var/jenkins_home/build_archives'
         BRANCH_NAME = 'main'
     }
 
@@ -17,57 +18,58 @@
             }
         }
 
-        stage('Restore Dependencies') {
+        stage('Build .NET Project') {
             steps {
-                echo '⚙️ Restoring .NET dependencies...'
-                sh 'dotnet restore'
+                echo '⚙️ Building ASP.NET 8 project...'
+                sh 'dotnet build Expense_Tracker/Expense_Tracker.csproj -c Release'
             }
         }
 
-        stage('Build Project') {
+        stage('Publish .NET Project') {
             steps {
-                echo '🏗️ Building ASP.NET Core project...'
-                sh 'dotnet build --configuration Release'
+                echo '📦 Publishing ASP.NET 8 project...'
+                sh 'dotnet publish Expense_Tracker/Expense_Tracker.csproj -c Release -o publish'
             }
         }
 
-        stage('Publish Project') {
+        stage('Archive Old Build') {
             steps {
-                echo '📦 Publishing application...'
-                sh 'dotnet publish -c Release -o ./publish'
+                echo '🗄️ Archiving previous build...'
+                sh '''
+                    mkdir -p ${ARCHIVE_DIR}
+                    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+                    if [ -d "${BUILD_DIR}" ]; then
+                        tar -czf ${ARCHIVE_DIR}/${APP_NAME}_$TIMESTAMP.tar.gz ${BUILD_DIR} || true
+                        echo "✅ Old build archived as ${ARCHIVE_DIR}/${APP_NAME}_$TIMESTAMP.tar.gz"
+                    else
+                        echo "⚠️ No previous build found to archive."
+                    fi
+                '''
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 echo '🐳 Building Docker image...'
-                sh "docker build -t ${DOCKER_IMAGE}:latest ."
+                sh "docker compose -f ${DOCKER_COMPOSE_FILE} build"
             }
         }
 
-        stage('Deploy Container') {
+        stage('Deploy Containers') {
             steps {
-                echo '🚀 Deploying Docker container...'
-                script {
-                    sh '''
-                        # Stop and remove any existing container
-                        docker ps -q --filter "name=expense_tracker_api" | grep -q . && \
-                        docker stop expense_tracker_api && docker rm expense_tracker_api || true
-
-                        # Run the new container
-                        docker run -d -p 8080:8080 --name expense_tracker_api expense_tracker-backend:latest
-                    '''
-                }
+                echo '🚀 Deploying containers...'
+                sh "docker compose -f ${DOCKER_COMPOSE_FILE} down"
+                sh "docker compose -f ${DOCKER_COMPOSE_FILE} up -d"
             }
         }
     }
 
     post {
         success {
-            echo "✅ Deployment successful!"
+            echo '✅ Deployment completed successfully!'
         }
         failure {
-            echo "❌ Build or deployment failed. Check Jenkins logs for details."
+            echo '❌ Deployment failed.'
         }
     }
 }

@@ -1,9 +1,10 @@
 ﻿using Expense_Tracker.Data;
-using Expense_Tracker.DTO;
+using Expense_Tracker.DTO.RecurringDtos;
 using Expense_Tracker.Models;
+using Expense_Tracker.Service.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
-namespace Expense_Tracker.Service
+namespace Expense_Tracker.Service.Implementations
 {
     public class RecurringExpenseService : IRecurringExpenseService
     {

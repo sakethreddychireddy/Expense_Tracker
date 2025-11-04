@@ -1,4 +1,4 @@
-﻿namespace Expense_Tracker.DTO
+﻿namespace Expense_Tracker.DTO.ExpeseDtos
 {
     public class MonthlyExpnseDto
     {

@@ -4,6 +4,7 @@ using Expense_Tracker.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Expense_Tracker.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251020233910_MakeCategoriesGlobal")]
+    partial class MakeCategoriesGlobal
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -55,49 +58,49 @@ namespace Expense_Tracker.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2025, 10, 20, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2025, 10, 20, 23, 39, 10, 79, DateTimeKind.Utc).AddTicks(3040),
                             Description = "Expenses for food,dining and groceries",
                             Name = "Food"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2025, 10, 20, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2025, 10, 20, 23, 39, 10, 79, DateTimeKind.Utc).AddTicks(3603),
                             Description = "Expenses for transportation and travel",
                             Name = "Transportation"
                         },
                         new
                         {
                             Id = 3,
-                            CreatedAt = new DateTime(2025, 10, 20, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2025, 10, 20, 23, 39, 10, 79, DateTimeKind.Utc).AddTicks(3604),
                             Description = "Expenses for utilities like electricity, water, etc.",
                             Name = "Utilities"
                         },
                         new
                         {
                             Id = 4,
-                            CreatedAt = new DateTime(2025, 10, 20, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2025, 10, 20, 23, 39, 10, 79, DateTimeKind.Utc).AddTicks(3605),
                             Description = "Expenses for entertainment and leisure activities",
                             Name = "Entertainment"
                         },
                         new
                         {
                             Id = 5,
-                            CreatedAt = new DateTime(2025, 10, 20, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2025, 10, 20, 23, 39, 10, 79, DateTimeKind.Utc).AddTicks(3606),
                             Description = "Expenses for medical and healthcare services",
                             Name = "Healthcare"
                         },
                         new
                         {
                             Id = 6,
-                            CreatedAt = new DateTime(2025, 10, 20, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2025, 10, 20, 23, 39, 10, 79, DateTimeKind.Utc).AddTicks(3607),
                             Description = "Expenses for education and learning materials",
                             Name = "Education"
                         },
                         new
                         {
                             Id = 7,
-                            CreatedAt = new DateTime(2025, 10, 20, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2025, 10, 20, 23, 39, 10, 79, DateTimeKind.Utc).AddTicks(3608),
                             Description = "Other expenses that do not fit into the above categories",
                             Name = "Miscellaneous"
                         });
@@ -179,32 +182,6 @@ namespace Expense_Tracker.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("RecurringExpenses");
-                });
-
-            modelBuilder.Entity("Expense_Tracker.Models.RefreshToken", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("Expires")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsRevoked")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Token")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("RefreshTokens");
                 });
 
             modelBuilder.Entity("Expense_Tracker.Models.User", b =>

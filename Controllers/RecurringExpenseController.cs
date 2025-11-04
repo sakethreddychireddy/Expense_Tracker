@@ -1,6 +1,6 @@
 ﻿using Expense_Tracker.Data;
-using Expense_Tracker.DTO;
-using Expense_Tracker.Service;
+using Expense_Tracker.DTO.RecurringDtos;
+using Expense_Tracker.Service.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;

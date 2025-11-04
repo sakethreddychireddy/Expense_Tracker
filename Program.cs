@@ -1,8 +1,8 @@
 ﻿using Expense_Tracker.Auth;
 using Expense_Tracker.Data;
 using Expense_Tracker.Middleware;
-using Expense_Tracker.Service;
-using Expense_Tracker.ServiceImpl;
+using Expense_Tracker.Service.Implementations;
+using Expense_Tracker.Service.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -13,11 +13,11 @@ var builder = WebApplication.CreateBuilder(args);
 // bind Jwt settings
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>()
-                  ?? throw new InvalidOperationException("JWT settings not found in configuration");  
+                  ?? throw new InvalidOperationException("JWT settings not found in configuration");
 
 // Add services to the container.
 builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer(); 
+builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -26,6 +26,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<IExpenseService, ExpenseService>();
 builder.Services.AddScoped<IRecurringExpenseService, RecurringExpenseService>();
+builder.Services.AddScoped<ICategoryService, CategoryServices>();
+builder.Services.AddScoped<IAuthServices, AuthServices>();
 
 // Register JwtService
 builder.Services.AddSingleton<IJwtService, JwtService>();

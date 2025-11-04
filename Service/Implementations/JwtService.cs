@@ -1,9 +1,10 @@
-﻿using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
+﻿using Expense_Tracker.Models;
+using Expense_Tracker.Service.Interfaces;
 using Microsoft.IdentityModel.Tokens;
-using Expense_Tracker.Models;
-using Expense_Tracker.Service;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 
 public class JwtService : IJwtService
 {
@@ -49,4 +50,14 @@ public class JwtService : IJwtService
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
+    public string GenerateRefreshToken()
+    {
+        var randomBytes = new byte[64];
+        using (var rng = RandomNumberGenerator.Create())
+        {
+            rng.GetBytes(randomBytes);
+            return Convert.ToBase64String(randomBytes);
+        }
+    }
+
 }

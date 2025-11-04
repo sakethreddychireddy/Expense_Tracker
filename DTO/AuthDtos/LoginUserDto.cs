@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Expense_Tracker.DTO
+namespace Expense_Tracker.DTO.AuthDtos
 {
     public class LoginUserDto
     {

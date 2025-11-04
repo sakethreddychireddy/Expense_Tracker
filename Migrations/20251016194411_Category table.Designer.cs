@@ -4,6 +4,7 @@ using Expense_Tracker.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Expense_Tracker.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251016194411_Category table")]
+    partial class Categorytable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -42,7 +45,7 @@ namespace Expense_Tracker.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
-                    b.Property<int?>("UserId")
+                    b.Property<int>("UserId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -50,57 +53,6 @@ namespace Expense_Tracker.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Categories");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            CreatedAt = new DateTime(2025, 10, 20, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Description = "Expenses for food,dining and groceries",
-                            Name = "Food"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            CreatedAt = new DateTime(2025, 10, 20, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Description = "Expenses for transportation and travel",
-                            Name = "Transportation"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            CreatedAt = new DateTime(2025, 10, 20, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Description = "Expenses for utilities like electricity, water, etc.",
-                            Name = "Utilities"
-                        },
-                        new
-                        {
-                            Id = 4,
-                            CreatedAt = new DateTime(2025, 10, 20, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Description = "Expenses for entertainment and leisure activities",
-                            Name = "Entertainment"
-                        },
-                        new
-                        {
-                            Id = 5,
-                            CreatedAt = new DateTime(2025, 10, 20, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Description = "Expenses for medical and healthcare services",
-                            Name = "Healthcare"
-                        },
-                        new
-                        {
-                            Id = 6,
-                            CreatedAt = new DateTime(2025, 10, 20, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Description = "Expenses for education and learning materials",
-                            Name = "Education"
-                        },
-                        new
-                        {
-                            Id = 7,
-                            CreatedAt = new DateTime(2025, 10, 20, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Description = "Other expenses that do not fit into the above categories",
-                            Name = "Miscellaneous"
-                        });
                 });
 
             modelBuilder.Entity("Expense_Tracker.Models.Expense", b =>
@@ -114,8 +66,9 @@ namespace Expense_Tracker.Migrations
                     b.Property<decimal>("Amount")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<int>("CategoryId")
-                        .HasColumnType("int");
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime2");
@@ -128,8 +81,6 @@ namespace Expense_Tracker.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CategoryId");
 
                     b.HasIndex("UserId");
 
@@ -181,32 +132,6 @@ namespace Expense_Tracker.Migrations
                     b.ToTable("RecurringExpenses");
                 });
 
-            modelBuilder.Entity("Expense_Tracker.Models.RefreshToken", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("Expires")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsRevoked")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Token")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("RefreshTokens");
-                });
-
             modelBuilder.Entity("Expense_Tracker.Models.User", b =>
                 {
                     b.Property<int>("Id")
@@ -242,26 +167,22 @@ namespace Expense_Tracker.Migrations
 
             modelBuilder.Entity("Expense_Tracker.Models.Categories", b =>
                 {
-                    b.HasOne("Expense_Tracker.Models.User", null)
+                    b.HasOne("Expense_Tracker.Models.User", "User")
                         .WithMany("Categories")
-                        .HasForeignKey("UserId");
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Expense_Tracker.Models.Expense", b =>
                 {
-                    b.HasOne("Expense_Tracker.Models.Categories", "Category")
-                        .WithMany()
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("Expense_Tracker.Models.User", "User")
                         .WithMany("Expenses")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Category");
 
                     b.Navigation("User");
                 });

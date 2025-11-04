@@ -1,23 +1,21 @@
 ﻿using Expense_Tracker.Data;
-using Expense_Tracker.DTO;
+using Expense_Tracker.DTO.CategoryDtos;
+using Expense_Tracker.DTO.ExpeseDtos;
 using Expense_Tracker.Models;
-using Expense_Tracker.Service;
-using Microsoft.AspNetCore.Identity;
+using Expense_Tracker.Service.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 
-namespace Expense_Tracker.ServiceImpl
+namespace Expense_Tracker.Service.Implementations
 {
     public class ExpenseService : IExpenseService
     {
         private readonly AppDbContext _context;
         private readonly ILogger<ExpenseService> _logger;
-        private readonly IJwtService _jwtService;
-        public ExpenseService(AppDbContext context, ILogger<ExpenseService> logger, IJwtService jwtService)
+        public ExpenseService(AppDbContext context, ILogger<ExpenseService> logger)
         {
             _context = context;
             _logger = logger;
-            _jwtService = jwtService;
         }
         public async Task<ExpenseDto?> CreateExpenseAsync(CreateExpenseDTO createExpenseDto, int userId)
         {
@@ -36,7 +34,7 @@ namespace Expense_Tracker.ServiceImpl
                     Title = createExpenseDto.Title,
                     Amount = createExpenseDto.Amount,
                     Date = createExpenseDto.Date,
-                    Category = createExpenseDto.Category,
+                    CategoryId = createExpenseDto.CategoryId,
                     UserId = userId // link expense to user
                 };
 
@@ -51,7 +49,7 @@ namespace Expense_Tracker.ServiceImpl
                     Title = expense.Title,
                     Amount = expense.Amount,
                     Date = expense.Date,
-                    Category = expense.Category
+                    //Category = expense.Category
                 };
             }
             catch (Exception ex)
@@ -66,14 +64,16 @@ namespace Expense_Tracker.ServiceImpl
             {
                 _logger.LogInformation("Retrieving all expenses.");
                 var expenses = await _context.Expenses.Where(e => e.UserId == userId)
+                    .Include(e => e.Category)
                     .Select(e => new ExpenseDto
                     {
                         Id = e.Id,
                         Title = e.Title,
                         Amount = e.Amount,
                         Date = e.Date,
-                        Category = e.Category
+                        CategoryName = e.Category.Name
                     })
+                    .AsNoTracking()
                     .ToListAsync();
 
                 return expenses;
@@ -97,9 +97,10 @@ namespace Expense_Tracker.ServiceImpl
             expense.Title = updateExpenseDto.Title;
             expense.Amount = updateExpenseDto.Amount;
             expense.Date = updateExpenseDto.Date;
-            expense.Category = updateExpenseDto.Category;
+            expense.CategoryId = updateExpenseDto.CategoryId;
 
             await _context.SaveChangesAsync();
+            await _context.Entry(expense).Reference(e => e.Category).LoadAsync();
 
             return new ExpenseDto
             {
@@ -107,7 +108,7 @@ namespace Expense_Tracker.ServiceImpl
                 Title = expense.Title,
                 Amount = expense.Amount,
                 Date = expense.Date,
-                Category = expense.Category
+                CategoryName = expense.Category.Name
             };
         }
 
@@ -136,84 +137,21 @@ namespace Expense_Tracker.ServiceImpl
         }
         public async Task<ExpenseDto> GetExpenseByIdAsync(int id)
         {
-            var expense = await _context.Expenses.FirstOrDefaultAsync(e => e.Id == id);
+            var expense = await _context.Expenses.Include(e => e.Category)
+                .FirstOrDefaultAsync(e => e.Id == id);
             if (expense is null)
             {
                 throw new KeyNotFoundException($"Expense with ID {id} not found");
             }
-            var expenseDto = new ExpenseDto
+            return new ExpenseDto
             {
                 Id = expense.Id,
                 Title = expense.Title,
                 Amount = expense.Amount,
                 Date = expense.Date,
-                Category = expense.Category
+                CategoryName = expense.Category.Name,
+                CategoryId = expense.Category.Id,
             };
-            return expenseDto;
-        }
-        public async Task<bool> UserExistsAsync(string email)
-        {
-            return await _context.Users.AnyAsync(u => u.Email == email);
-        }
-        public async Task<User?> RegisterUserAsync(RegisterUserDto dto)
-        {
-            try
-            {
-                var user = new User
-                {
-                    Email = dto.Email,
-                    Role = "User"
-                };
-                var passwordHasher = new PasswordHasher<User>();
-                user.PasswordHash = passwordHasher.HashPassword(user, dto.Password);
-                _context.Users.Add(user);
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation("User {Email} registered successfully.", user.Email);
-
-                return user;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error registering user.");
-                throw;
-            }
-        }
-
-        public async Task<string> LoginAsync(LoginUserDto loginUserDto)
-        {
-            try
-            {
-                var user = await _context.Users.SingleOrDefaultAsync(u => u.Email == loginUserDto.Email);
-
-                if (user == null)
-                {
-                    _logger.LogWarning("Login failed: No user found with email {Email}", loginUserDto.Email);
-                    // Return empty string to match non-nullable return type
-                    return string.Empty;
-                }
-
-                var passwordHasher = new PasswordHasher<User>();
-                var result = passwordHasher.VerifyHashedPassword(user, user.PasswordHash, loginUserDto.Password);
-
-                if (result == PasswordVerificationResult.Failed)
-                {
-                    _logger.LogWarning("Login failed: Incorrect password for email {Email}", loginUserDto.Email);
-                    // Return empty string to match non-nullable return type
-                    return string.Empty;
-                }
-
-                var token = _jwtService.GenerateToken(user);
-
-                _logger.LogInformation("User {Email} logged in successfully.", user.Email);
-
-                return token;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error during login.");
-                throw new Exception($"Error during login: {ex.Message}", ex);
-            }
         }
         public async Task<decimal> GetTotalExpensesAsync(int userId)
         {
@@ -248,7 +186,8 @@ namespace Expense_Tracker.ServiceImpl
                     {
                         Month = CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName(g.Key),
                         TotalAmount = g.Sum(e => e.Amount)
-                    }).ToListAsync();
+                    }).AsNoTracking()
+                    .ToListAsync();
 
                 // Merge so months with no expenses show 0
                 foreach (var exp in expenses)
@@ -262,6 +201,42 @@ namespace Expense_Tracker.ServiceImpl
             {
                 _logger.LogError(ex, "Error retrieving monthly expenses.");
                 throw new Exception($"Error retrieving monthly expenses: {ex.Message}", ex);
+            }
+        }
+        public async Task<List<CategorySpendingDto>> GetSpendingByCategoryAsync(int userId)
+        {
+            try
+            {
+                //var spendingByCategory = await _context.Expenses
+                //.Where(e => e.UserId == userId)  // Filter by logged-in user
+                //.GroupBy(e => e.Category)        // Group by category field from Expense table
+                //.Select(g => new CategorySpendingDto
+                //{
+                //     //CategoryName = g.Key,
+                //    TotalAmount = g.Sum(e => e.Amount)
+                //})
+                //.OrderByDescending(x => x.TotalAmount) // optional: sort highest spending first
+                //.ToListAsync();
+
+                //return spendingByCategory;
+                var spendingByCategory = await _context.Expenses
+                    .Where(e => e.UserId == userId)
+                    .Include(e => e.Category)
+                    .GroupBy(e => e.Category.Name)
+                    .Select(g => new CategorySpendingDto
+                    {
+                        CategoryName = g.Key,
+                        TotalAmount = g.Sum(e => e.Amount)
+                    })
+                    .OrderByDescending(x => x.TotalAmount)
+                    .AsNoTracking()
+                    .ToListAsync();
+                return spendingByCategory;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving spending by category for User {UserId}.", userId);
+                throw new Exception($"Error retrieving spending by category: {ex.Message}", ex);
             }
         }
     }

@@ -1,6 +1,6 @@
-﻿using Expense_Tracker.DTO;
+﻿using Expense_Tracker.DTO.RecurringDtos;
 
-namespace Expense_Tracker.Service
+namespace Expense_Tracker.Service.Interfaces
 {
     public interface IRecurringExpenseService
     {

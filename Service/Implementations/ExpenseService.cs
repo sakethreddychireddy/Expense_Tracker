@@ -206,29 +206,9 @@ namespace Expense_Tracker.Service.Implementations
         public async Task<List<CategorySpendingDto>> GetSpendingByCategoryAsync(int userId)
         {
             try
-            {
-                //var spendingByCategory = await _context.Expenses
-                //.Where(e => e.UserId == userId)  // Filter by logged-in user
-                //.GroupBy(e => e.Category)        // Group by category field from Expense table
-                //.Select(g => new CategorySpendingDto
-                //{
-                //     //CategoryName = g.Key,
-                //    TotalAmount = g.Sum(e => e.Amount)
-                //})
-                //.OrderByDescending(x => x.TotalAmount) // optional: sort highest spending first
-                //.ToListAsync();
-
-                //return spendingByCategory;
-                var spendingByCategory = await _context.Expenses
-                    .Where(e => e.UserId == userId)
-                    .Include(e => e.Category)
-                    .GroupBy(e => e.Category.Name)
-                    .Select(g => new CategorySpendingDto
-                    {
-                        CategoryName = g.Key,
-                        TotalAmount = g.Sum(e => e.Amount)
-                    })
-                    .OrderByDescending(x => x.TotalAmount)
+            {                
+                var spendingByCategory = await _context.Database
+                    .SqlQuery<CategorySpendingDto>($"EXEC getCategorySpendingsByUser @UserId = {userId}")
                     .AsNoTracking()
                     .ToListAsync();
                 return spendingByCategory;

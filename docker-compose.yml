@@ -1,35 +1,35 @@
-﻿version: "3.9"
-
+﻿version: '3.9'
 services:
-  api:
+  expense-tracker-api:
     build:
-      context: ./Expense_Tracker
+      context: .
       dockerfile: Dockerfile
-    container_name: expense_tracker_api
+    container_name: expense-tracker-api
     ports:
       - "8080:8080"
     depends_on:
-      - db
+      - sqlserver
     environment:
-      - ConnectionStrings__DefaultConnection=Server=db;Database=ExpenseTrackerDB;User Id=sa;Password=Saketh@9491;TrustServerCertificate=True;
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=ExpenseTrackerDB;User=sa;Password=Saketh@9491;
     networks:
-      - expense_net
+      - expense_network
 
-  db:
+  sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: expense_tracker_db
+    container_name: sqlserver
     environment:
       SA_PASSWORD: "Saketh@9491"
       ACCEPT_EULA: "Y"
     ports:
       - "1433:1433"
+    networks:
+      - expense_network
     volumes:
       - sql_data:/var/opt/mssql
-    networks:
-      - expense_net
 
 networks:
-  expense_net:
+  expense_network:
 
 volumes:
   sql_data:

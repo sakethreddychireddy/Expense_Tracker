@@ -1,4 +1,5 @@
-﻿using Expense_Tracker.Models;
+﻿using Expense_Tracker.DTO.CategoryDtos;
+using Expense_Tracker.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Expense_Tracker.Data
@@ -17,6 +18,7 @@ namespace Expense_Tracker.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+            //modelBuilder.Entity<CategorySpendingDto>().HasNoKey();
 
             // User-Expense relationship (1-to-many)
             modelBuilder.Entity<Expense>()

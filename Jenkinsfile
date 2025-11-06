@@ -1,14 +1,12 @@
 ﻿pipeline {
     agent any
-
     environment {
-        APP_NAME = 'expense-tracker-api'
-        DOCKER_COMPOSE_FILE = 'docker-compose.yml'
+        APP_NAME = 'expense_tracker_api'
         BUILD_DIR = 'publish'
         ARCHIVE_DIR = '/var/jenkins_home/build_archives'
+        DOCKER_COMPOSE_FILE = 'docker-compose.yml'
         BRANCH_NAME = 'main'
     }
-
     stages {
         stage('Checkout') {
             steps {

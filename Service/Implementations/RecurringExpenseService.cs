@@ -10,13 +10,11 @@ namespace Expense_Tracker.Service.Implementations
     {
         private readonly AppDbContext _context;
         private readonly ILogger<RecurringExpenseService> _logger;
-        private readonly IJwtService _jwtService;
 
-        public RecurringExpenseService(AppDbContext context, ILogger<RecurringExpenseService> logger, IJwtService jwtService)
+        public RecurringExpenseService(AppDbContext context, ILogger<RecurringExpenseService> logger)
         {
             _context = context;
             _logger = logger;
-            _jwtService = jwtService;
         }
         public async Task<RecurringExpenseDto?> AddRecurringExpenseAsync(int userId, CreateRecurringExpenseDto dto)
         {

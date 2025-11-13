@@ -18,8 +18,7 @@ namespace Expense_Tracker.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-            //modelBuilder.Entity<CategorySpendingDto>().HasNoKey();
-
+            
             // User-Expense relationship (1-to-many)
             modelBuilder.Entity<Expense>()
                 .HasOne(e => e.User)              // Expense belongs to User
@@ -34,12 +33,6 @@ namespace Expense_Tracker.Data
                 .HasForeignKey(re => re.UserId)      // FK property
                 .OnDelete(DeleteBehavior.Cascade);    // Delete user => delete their recurring expenses
 
-            //// User-Categories relationship (1-to-many)
-            //modelBuilder.Entity<Categories>()
-            //    .HasOne(c => c.User)               // Category belongs to User
-            //    .WithMany(u => u.Categories)       // User has many Categories
-            //    .HasForeignKey(c => c.UserId)      // FK property
-            //    .OnDelete(DeleteBehavior.Cascade);  // Delete user => delete their categories
             //expense -category relationship
             modelBuilder.Entity<Expense>()
                 .HasOne(e => e.Category)              // Expense belongs to Category

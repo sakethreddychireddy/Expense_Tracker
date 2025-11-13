@@ -1,6 +1,8 @@
 ﻿using Expense_Tracker.Auth;
 using Expense_Tracker.Data;
 using Expense_Tracker.Middleware;
+using Expense_Tracker.Repositories.Interfaces;
+using Expense_Tracker.Repositories.RepoServices;
 using Expense_Tracker.Service.Implementations;
 using Expense_Tracker.Service.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -24,10 +26,16 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("ExpenseTrackerDb"),
     sqlOptions => sqlOptions.EnableRetryOnFailure()));
 
+// Register Repositories
+builder.Services.AddScoped<IExpenseRepository, ExpenseRepositoryService>();
 builder.Services.AddScoped<IExpenseService, ExpenseService>();
 builder.Services.AddScoped<IRecurringExpenseService, RecurringExpenseService>();
 builder.Services.AddScoped<ICategoryService, CategoryServices>();
 builder.Services.AddScoped<IAuthServices, AuthServices>();
+
+// Add Caching Services
+builder.Services.AddMemoryCache();
+builder.Services.AddOutputCache();
 
 // Register JwtService
 builder.Services.AddSingleton<IJwtService, JwtService>();

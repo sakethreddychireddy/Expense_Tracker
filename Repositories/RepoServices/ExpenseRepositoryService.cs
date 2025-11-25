@@ -21,13 +21,13 @@ namespace Expense_Tracker.Repositories.RepoServices
         {
             return await _context.Users.FindAsync(userId);
         }
-        public async Task<Expense?> CreateExpenseAsync(Expense expense, int userId)
+        public async Task<Expense?> CreateExpenseAsync(Expense expense)
         {
             try
             {
-                _logger.LogInformation("Creating expense for User ID {UserId}.", userId);
+                _logger.LogInformation("Creating expense for User ID");
                 var result = await _context.Expenses.AddAsync(expense);
-                _logger.LogInformation("Expense created with ID {ExpenseId} for User ID {UserId}.", result.Entity.Id, userId);
+                _logger.LogInformation("Expense created with ID {ExpenseId} for User ID.", result.Entity.Id);
                 await _context.SaveChangesAsync();
                 return expense;
             }
@@ -37,15 +37,18 @@ namespace Expense_Tracker.Repositories.RepoServices
                 return null;
             }
         }
-        //public async Task<IEnumerable<ExpenseDto?>> GetAllExpensesAsync(int userId)
-        public async Task<IEnumerable<Expense?>> GetAllExpensesAsync(int userId)
+        public async Task<IEnumerable<Expense?>> GetAllExpensesAsync(int userId, int pageNumber, int pageSize)
         {
             try
             {
                 _logger.LogInformation("Retrieving all expenses for User ID {UserId}.", userId);
                 var getAllExpenses = await _context.Expenses
-                    .Include(c => c.Category)
                     .Where(e => e.UserId == userId)
+                    .Include(c => c.Category)
+                    .OrderByDescending(e => e.Date)
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .AsNoTracking()
                     .ToListAsync();
                 _logger.LogInformation("Retrieved {Count} expenses for User ID {UserId}.", getAllExpenses.Count, userId);
                 return getAllExpenses;
@@ -56,6 +59,11 @@ namespace Expense_Tracker.Repositories.RepoServices
                 throw;
             }
         }
+        public async Task<int> GetExpenseCountAsync(int userId)
+        {
+            _logger.LogInformation("Counting expenses for User ID {UserId}.", userId);
+            return await _context.Expenses.CountAsync(e => e.UserId == userId);
+        }
         public async Task<Expense?> GetExpenseByIdAsync(int expenseId, int userId)
         {
             _logger.LogInformation("Retrieving expense with ID {ExpenseId} for User ID {UserId}.", expenseId, userId);
@@ -63,20 +71,13 @@ namespace Expense_Tracker.Repositories.RepoServices
                 .Include(c => c.Category)
                 .FirstOrDefaultAsync(e => e.Id == expenseId && e.UserId == userId);
         }
-        //public async Task<Expense?> UpdateExpenseAsync(Expense expense, int userId)
-        public async Task<Expense?> UpdateExpenseAsync(int id, Expense expense, int userId)
+        public async Task<Expense?> UpdateExpenseAsync(int id, Expense expense)
         {
             try
             {
-                //var updateExpense = await _context.Expenses
-                //    .FirstOrDefaultAsync(e => e.Id == expense.Id && e.UserId == userId);
-
-                //_context.Expenses.Update(expense);
-                //await _context.SaveChangesAsync();
-             //return expense;
-             _logger.LogInformation("Updating expense with ID {ExpenseId} for User ID {UserId}.", id, userId);
-                var updateExpense = await _context.Expenses
-                    .FirstOrDefaultAsync(e => e.Id == id && e.UserId == userId);
+             _logger.LogInformation("Updating expense with ID {ExpenseId}", id);
+                var updateExpense = await _context.Expenses.Include(c => c.Category)
+                    .FirstOrDefaultAsync(e => e.Id == id);
                 if (updateExpense == null)
                     return null;
                 // Update fields
@@ -88,6 +89,7 @@ namespace Expense_Tracker.Repositories.RepoServices
                 _logger.LogInformation("Saving updated expense with ID {ExpenseId}.", id);
                 _context.Expenses.Update(updateExpense);
                 await _context.SaveChangesAsync();
+                await _context.Entry(updateExpense).Reference(e => e.Category).LoadAsync();
                 return updateExpense;
             }
             catch (Exception ex)
@@ -111,7 +113,6 @@ namespace Expense_Tracker.Repositories.RepoServices
                 return null;
             }
         }
-        //public async Task<bool> DeleteExpenseAsync(Expense expense, int userId)
         public async Task<bool> DeleteExpenseAsync(int id, int userId)
         {
             try

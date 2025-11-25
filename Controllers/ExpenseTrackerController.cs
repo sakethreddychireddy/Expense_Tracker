@@ -1,4 +1,5 @@
 ﻿using Expense_Tracker.DTO.ExpeseDtos;
+using Expense_Tracker.DTO.PaginationDtos;
 using Expense_Tracker.Service.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -51,10 +52,10 @@ namespace Expense_Tracker.Controllers
         [Authorize(Roles = "User")]
         [HttpGet("GetAllExpenses")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetAllExpenses()
+        public async Task<IActionResult> GetAllExpenses([FromQuery] PaginationParams paginationParams)
         {
             int userId = GetUserIdFromClaims();
-            var expense = await _expenseService.GetAllExpenses(userId);
+            var expense = await _expenseService.GetAllExpenses(userId, paginationParams);
             return Ok(expense);
         }
 

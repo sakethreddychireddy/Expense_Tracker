@@ -1,5 +1,6 @@
 ﻿using Expense_Tracker.Auth;
 using Expense_Tracker.Data;
+using Expense_Tracker.Mappings;
 using Expense_Tracker.Middleware;
 using Expense_Tracker.Repositories.Interfaces;
 using Expense_Tracker.Repositories.RepoServices;
@@ -27,6 +28,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     sqlOptions => sqlOptions.EnableRetryOnFailure()));
 
 // Register Repositories
+builder.Services.AddAutoMapper(typeof(MappingProfile));
 builder.Services.AddScoped<IExpenseRepository, ExpenseRepositoryService>();
 builder.Services.AddScoped<IExpenseService, ExpenseService>();
 builder.Services.AddScoped<IRecurringExpenseService, RecurringExpenseService>();

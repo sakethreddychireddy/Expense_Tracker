@@ -1,6 +1,7 @@
-﻿using Expense_Tracker.Data;
+﻿using AutoMapper;
 using Expense_Tracker.DTO.CategoryDtos;
 using Expense_Tracker.DTO.ExpeseDtos;
+using Expense_Tracker.DTO.PaginationDtos;
 using Expense_Tracker.Models;
 using Expense_Tracker.Repositories.Interfaces;
 using Expense_Tracker.Service.Interfaces;
@@ -9,30 +10,24 @@ namespace Expense_Tracker.Service.Implementations
 {
     public class ExpenseService : IExpenseService
     {
-        private readonly AppDbContext _context;
         private readonly ILogger<ExpenseService> _logger;
         private readonly IExpenseRepository _expenseRepository;
-        public ExpenseService(AppDbContext context, ILogger<ExpenseService> logger, IExpenseRepository expenseRepository)
+        private readonly IMapper _mapper;
+        public ExpenseService(ILogger<ExpenseService> logger, IExpenseRepository expenseRepository, IMapper mapper)
         {
-            _context = context;
             _logger = logger;
             _expenseRepository = expenseRepository;
+            _mapper = mapper;
         }
         public async Task<ExpenseDto?> CreateExpenseAsync(CreateExpenseDTO createExpenseDto, int userId)
         {
             try
             {
                 _logger.LogInformation("Creating expense for User {UserId}.", userId);
-                var createExpense = new Expense
-                {
-                    Title = createExpenseDto.Title,
-                    Amount = createExpenseDto.Amount,
-                    Date = createExpenseDto.Date,
-                    CategoryId = createExpenseDto.CategoryId,
-                    UserId = userId // link expense to user
-                };
+                var createExpense = _mapper.Map<Expense>(createExpenseDto);
+                createExpense.UserId = userId;
                 _logger.LogInformation("Calling repository to create expense.");
-                var expense = await _expenseRepository.CreateExpenseAsync(createExpense, userId);
+                var expense = await _expenseRepository.CreateExpenseAsync(createExpense);
                 _logger.LogInformation("Expense with ID {ExpenseId} created successfully for User {UserId}.", expense.Id, userId);
                 return new ExpenseDto
                 {
@@ -48,21 +43,32 @@ namespace Expense_Tracker.Service.Implementations
                 throw;
             }
         }
-        public async Task<IEnumerable<ExpenseDto>> GetAllExpenses(int userId)
+        public async Task<PagedResult<ExpenseDto>> GetAllExpenses(int userId, PaginationParams paginationParams)
         {
             try
             {
                 _logger.LogInformation("Retrieving all expenses.");
-                var getAllExpenses = await _expenseRepository.GetAllExpensesAsync(userId);
+                var totalCount = await _expenseRepository.GetExpenseCountAsync(userId);
+                var getAllExpenses = await _expenseRepository.GetAllExpensesAsync(userId,
+                    paginationParams.PageNumber,
+                    paginationParams.PageSize);
                 _logger.LogInformation("Expenses retrieved successfully.");
-                return getAllExpenses.Select(e => new ExpenseDto
+                var expenseDtos = getAllExpenses.Select(e => new ExpenseDto
                 {
                     Id = e.Id,
                     Title = e.Title,
                     Amount = e.Amount,
                     Date = e.Date,
                     CategoryName = e.Category.Name
-                });
+                }).ToList();
+                _logger.LogInformation("Mapped expenses to DTOs successfully.");
+                return new PagedResult<ExpenseDto>
+                {
+                    Items = expenseDtos,
+                    TotalCount = totalCount,
+                    PageNumber = paginationParams.PageNumber,
+                    PageSize = paginationParams.PageSize
+                };
             }
             catch (Exception ex)
             {
@@ -73,28 +79,22 @@ namespace Expense_Tracker.Service.Implementations
         public async Task<UpdateExpenseDto?> UpdateExpenseAsync(int id, UpdateExpenseDto updateExpenseDto, int userId)
         {
             _logger.LogInformation($"Update expense with ID {id} for User {userId}");
-            var updateExpense = new Expense
-            {
-                Id = id,
-                Title = updateExpenseDto.Title,
-                Amount = updateExpenseDto.Amount,
-                Date = updateExpenseDto.Date,
-                CategoryId = updateExpenseDto.CategoryId,
-                UserId = userId
-            };
+            var updateExpense = _mapper.Map<Expense>(updateExpenseDto);
             _logger.LogInformation($"Calling repository to update expense");
-            var expense = await _expenseRepository.UpdateExpenseAsync(id, updateExpense, userId);
+            var expense = await _expenseRepository.UpdateExpenseAsync(id, updateExpense);
             if (expense == null)
                 return null;
             _logger.LogInformation($"Expense with ID {id} updated successfully");
             return new UpdateExpenseDto
-                {
+            {
                 Id = expense.Id,
                 Title = expense.Title,
                 Amount = expense.Amount,
                 Date = expense.Date,
                 CategoryId = expense.CategoryId
             };
+            //updateExpense.Id = expense.UserId;
+            //return _mapper.Map<UpdateExpenseDto>(expense);
         }
 
         public async Task<bool> DeleteExpenseAsync(int id, int userId)

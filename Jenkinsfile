@@ -1,76 +1,95 @@
 ﻿pipeline {
     agent any
+
     environment {
-        APP_NAME = 'expense_tracker_api'
-        BUILD_DIR = 'publish'
-        ARCHIVE_DIR = '/var/jenkins_home/build_archives'
-        DOCKER_COMPOSE_FILE = 'docker-compose.yml'
+        DOCKER_IMAGE = 'expense_tracker/backend-api'
         BRANCH_NAME = 'main'
     }
+
     stages {
+
         stage('Checkout') {
             steps {
-                echo '🔹 Checking out code...'
+                echo '📥 Cloning backend repository...'
                 git branch: "${BRANCH_NAME}",
-                    url: 'https://github.com/sakethreddychireddy/Expense_Tracker.git'
+                    url: 'https://github.com/sakethreddychireddy/Expense_Tracker.git',
+                    credentialsId: 'github-creds'
             }
         }
 
-        stage('Build .NET Project') {
+        stage('Restore Dependencies') {
             steps {
-                echo '🔹 Building the .NET project...'
-                sh 'dotnet build Expense_Tracker/Expense_Tracker.csproj -c Release'
+                echo '📦 Restoring .NET dependencies...'
+                sh 'dotnet restore'
             }
         }
 
-        stage('Publish .NET Project') {
+        stage('Build Project') {
             steps {
-                echo '🔹 Publishing the project...'
-                sh 'dotnet publish Expense_Tracker/Expense_Tracker.csproj -c Release -o ${BUILD_DIR}'
+                echo '🏗️ Building .NET project...'
+                sh 'dotnet build --configuration Release'
             }
         }
 
-        stage('Archive Old Build') {
+        stage('Publish Project') {
             steps {
-                echo '🔹 Archiving old build (if exists)...'
-                sh '''
-                    mkdir -p ${ARCHIVE_DIR}
-                    TIMESTAMP=$(date +%Y%m%d%H%M%S)
-                    if [ -d "${BUILD_DIR}" ]; then
-                        mv ${BUILD_DIR} ${ARCHIVE_DIR}/${APP_NAME}_${TIMESTAMP} || true
-                    fi
-                '''
+                echo '📤 Publishing .NET project...'
+                sh 'dotnet publish -c Release -o ./publish'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                echo '🐳 Building Docker image...'
-                sh "docker-compose -f ${DOCKER_COMPOSE_FILE} build"
+                echo '🐳 Building backend Docker image...'
+                script {
+                    sh "docker build --network=host -t ${DOCKER_IMAGE}:${BUILD_NUMBER} ."
+                    sh "docker tag ${DOCKER_IMAGE}:${BUILD_NUMBER} ${DOCKER_IMAGE}:latest"
+                }
             }
         }
 
-        stage('Deploy with Docker Compose') {
+        stage('Deploy Container') {
             steps {
-                echo '🚀 Deploying containers...'
-                sh """
-                    docker-compose -f ${DOCKER_COMPOSE_FILE} down
-                    docker-compose -f ${DOCKER_COMPOSE_FILE} up -d
-                """
+                echo '🚀 Deploying backend API container...'
+                script {
+                    sh '''
+                        PORT=5000
+                        CONTAINER_NAME=backend_api_container
+
+                        echo "🧭 Checking for existing containers on port $PORT..."
+                        docker ps -q --filter "publish=$PORT" | xargs -r docker stop || true
+                        docker ps -aq --filter "publish=$PORT" | xargs -r docker rm || true
+
+                        echo "🔍 Checking if container $CONTAINER_NAME exists..."
+                        if [ "$(docker ps -aq -f name=$CONTAINER_NAME)" ]; then
+                            echo "📦 Stopping existing container..."
+                            docker stop $CONTAINER_NAME || true
+
+                            TIMESTAMP=$(date +"%Y%m%d%H%M%S")
+                            ARCHIVE_NAME="${CONTAINER_NAME}_${TIMESTAMP}"
+                            echo "🗄️ Archiving old container as: $ARCHIVE_NAME"
+                            docker rename $CONTAINER_NAME $ARCHIVE_NAME || true
+                        fi
+
+                        echo "🧹 Cleaning up dangling Docker images..."
+                        docker image prune -f || true
+
+                        echo "🚀 Running new backend API container..."
+                        docker run -d -p 5000:80 --name backend_api_container ${DOCKER_IMAGE}:latest
+
+                        echo "✅ Backend deployment complete!"
+                    '''
+                }
             }
         }
     }
 
     post {
         success {
-            echo '✅ Pipeline completed successfully!'
+            echo "🎉 Backend API deployment successful!"
         }
         failure {
-            echo '❌ Pipeline failed. Check Jenkins logs for details.'
-        }
-        always {
-            echo '🧹 Cleaning up workspace...'
-            cleanWs()
+            echo "❌ Backend build or deployment failed. Check Jenkins logs."
         }
     }
 }
